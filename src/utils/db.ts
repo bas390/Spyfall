@@ -194,5 +194,58 @@ export const GameDB = {
       console.error('Error fetching leaderboard:', error);
       throw new Error('ไม่สามารถดึงข้อมูลอันดับผู้เล่นได้');
     }
-  }
+  },
+
+  async clearDatabase() {
+    try {
+      // ล้างข้อมูลเกม
+      const gamesRef = collection(db, 'games');
+      const gamesSnapshot = await getDocs(gamesRef);
+      const gamePromises = gamesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      
+      // ล้างข้อมูลผู้ใช้
+      const usersRef = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersRef);
+      const userPromises = usersSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      
+      // ล้างประวัติเกม
+      const historyRef = collection(db, 'game_history');
+      const historySnapshot = await getDocs(historyRef);
+      const historyPromises = historySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      
+      // ล้างสถิติผู้เล่น
+      const statsRef = collection(db, 'player_stats');
+      const statsSnapshot = await getDocs(statsRef);
+      const statsPromises = statsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+
+      // ล้างข้อมูลทั้งหมดพร้อมกัน
+      await Promise.all([
+        ...gamePromises,
+        ...userPromises,
+        ...historyPromises,
+        ...statsPromises
+      ]);
+      
+      console.log('ล้างข้อมูลทั้งหมดเรียบร้อย');
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการล้างข้อมูล:', error);
+      throw error;
+    }
+  },
+
+  async getAllUsers() {
+    try {
+      const usersRef = collection(db, 'users');
+      const snapshot = await getDocs(usersRef);
+      const users = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      console.log('All users:', users);
+      return users;
+    } catch (error) {
+      console.error('Error getting users:', error);
+      throw error;
+    }
+  },
 }; 

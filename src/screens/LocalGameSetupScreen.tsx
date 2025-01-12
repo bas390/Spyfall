@@ -58,23 +58,17 @@ export default function LocalGameSetupScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={28} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          ตั้งค่าเกม
-        </Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <TouchableOpacity 
+        onPress={() => navigation.goBack()}
+        style={[styles.backButton, { top: insets.top + 16 }]}
+      >
+        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+      </TouchableOpacity>
 
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 60 }]}
       >
         <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
           <View style={styles.cardHeader}>
@@ -116,78 +110,58 @@ export default function LocalGameSetupScreen({ navigation, route }: Props) {
           <Button
             title="เพิ่มผู้เล่น"
             onPress={() => setPlayers([...players, `ผู้เล่น ${players.length + 1}`])}
-            variant="secondary"
             style={styles.addButton}
-            leftIcon={<Ionicons name="add" size={24} color="white" />}
+            variant="outline"
+            leftIcon={<Ionicons name="add" size={24} color={theme.colors.primary} />}
           />
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="eye-off" size={24} color={theme.colors.primary} />
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>จำนวนสายลับ</Text>
+            <Ionicons name="settings" size={24} color={theme.colors.primary} />
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>ตั้งค่าเกม</Text>
           </View>
-          
+
+          <Text style={[styles.label, { color: theme.colors.text }]}>จำนวนสายลับ</Text>
           <View style={styles.settingRow}>
             <Button
               title="-"
               onPress={() => setSpyCount(Math.max(1, spyCount - 1))}
-              variant="secondary"
-              size="sm"
               style={styles.countButton}
+              variant="outline"
             />
-            <Text style={[styles.countText, { color: theme.colors.text }]}>
-              {spyCount}
-            </Text>
+            <Text style={[styles.countText, { color: theme.colors.text }]}>{spyCount}</Text>
             <Button
               title="+"
               onPress={() => setSpyCount(Math.min(Math.floor(players.length / 2), spyCount + 1))}
-              variant="secondary"
-              size="sm"
               style={styles.countButton}
+              variant="outline"
             />
           </View>
-        </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="time" size={24} color={theme.colors.primary} />
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>เวลา (นาที)</Text>
-          </View>
-          
+          <Text style={[styles.label, { color: theme.colors.text }]}>เวลาในการเล่น (นาที)</Text>
           <View style={styles.settingRow}>
             <Button
               title="-"
               onPress={() => setGameTime(Math.max(60, gameTime - 60))}
-              variant="secondary"
-              size="sm"
               style={styles.countButton}
+              variant="outline"
             />
-            <Text style={[styles.countText, { color: theme.colors.text }]}>
-              {gameTime / 60}
-            </Text>
+            <Text style={[styles.countText, { color: theme.colors.text }]}>{gameTime / 60}</Text>
             <Button
               title="+"
               onPress={() => setGameTime(Math.min(900, gameTime + 60))}
-              variant="secondary"
-              size="sm"
               style={styles.countButton}
+              variant="outline"
             />
           </View>
-        </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="map" size={24} color={theme.colors.primary} />
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>สถานที่</Text>
-          </View>
-          
           <Button
-            title={availableLocations ? `เลือกสถานที่ (${availableLocations.length})` : "เลือกสถานที่"}
+            title="เลือกสถานที่"
             onPress={handleSelectLocations}
-            variant="secondary"
             style={styles.locationButton}
-            leftIcon={<Ionicons name="map" size={24} color="white" />}
+            variant="outline"
+            leftIcon={<Ionicons name="map" size={24} color={theme.colors.primary} />}
           />
         </View>
       </ScrollView>
@@ -211,19 +185,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
   backButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    position: 'absolute',
+    left: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   content: {
     flex: 1,
@@ -235,7 +204,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -272,6 +240,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
+    marginBottom: 16,
   },
   countButton: {
     width: 48,
@@ -293,5 +262,10 @@ const styles = StyleSheet.create({
   },
   startButton: {
     height: 56,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
   },
 }); 

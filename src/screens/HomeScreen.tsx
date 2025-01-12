@@ -1,62 +1,49 @@
 import React from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { useTheme } from '@react-navigation/native';
-import { Theme } from '../theme';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { useTheme as useAppTheme } from '../context/ThemeContext';
-import { Button } from '../components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { auth } from '../config/firebase';
-import { signOut } from 'firebase/auth';
+import { useTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Theme } from '../theme';
+import { Button } from '../components/Button';
+import { useAuth } from '../hooks/useAuth';
+import { GameDB } from '../utils/db';
 
-export const HomeScreen = ({ navigation }: any) => {
+type Props = {
+  navigation: any;
+};
+
+export const HomeScreen = ({ navigation }: Props) => {
   const theme = useTheme() as Theme;
-  const { isDarkMode, toggleTheme } = useAppTheme();
+  const { signOut, loading } = useAuth();
+  const { user } = useAuth();
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'ยืนยันการออกจากระบบ',
-      'คุณต้องการออกจากระบบใช่หรือไม่?',
-      [
-        {
-          text: 'ยกเลิก',
-          style: 'cancel'
-        },
-        {
-          text: 'ออกจากระบบ',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              await AsyncStorage.removeItem('user');
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถออกจากระบบได้ กรุณาลองใหม่อีกครั้ง');
-            }
-          }
-        }
-      ]
-    );
-  };
+  console.log('Current user email:', user?.email);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Button
+        title=""
+        onPress={async () => {
+          try {
+            await signOut();
+            navigation.replace('Login');
+          } catch (error) {
+            console.error('Error signing out:', error);
+          }
+        }}
+        variant="ghost"
+        style={styles.logoutButton}
+        leftIcon={<Ionicons name="log-out-outline" size={24} color={theme.colors.error} />}
+        disabled={loading}
+      />
+      <View style={styles.inner}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.colors.text }]}>
             Spyfall
           </Text>
-          <View style={styles.headerButtons}>
-            <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} />
-            <Button
-              title="ออกจากระบบ"
-              onPress={handleLogout}
-              variant="secondary"
-              leftIcon={<Ionicons name="log-out-outline" size={20} color="white" />}
-            />
-          </View>
+          <Text style={[styles.subtitle, { color: theme.colors.subText }]}>
+            เกมสายลับในสถานที่ลับ
+          </Text>
         </View>
 
         <View style={styles.content}>
@@ -87,6 +74,45 @@ export const HomeScreen = ({ navigation }: any) => {
             variant="outline"
             leftIcon={<Ionicons name="time-outline" size={24} color={theme.colors.primary} />}
           />
+          <Button 
+            title="วิธีการเล่น"
+            onPress={() => navigation.navigate('Tutorial')}
+            style={styles.button}
+            variant="outline"
+            leftIcon={<Ionicons name="help-circle-outline" size={24} color={theme.colors.primary} />}
+          />
+
+          {user?.email === 'rockmanm53@gmail.com' && (
+            <>
+              <Button
+                title="ล้างข้อมูลเกม"
+                onPress={async () => {
+                  try {
+                    await GameDB.clearDatabase();
+                    Alert.alert('สำเร็จ', 'ล้างข้อมูลเกมทั้งหมดเรียบร้อยแล้ว');
+                  } catch (error) {
+                    Alert.alert('ผิดพลาด', 'ไม่สามารถล้างข้อมูลได้');
+                  }
+                }}
+                style={[styles.button, { backgroundColor: theme.colors.error }]}
+                leftIcon={<Ionicons name="trash" size={24} color="white" />}
+              />
+              <Button
+                title="ดูข้อมูลผู้ใช้"
+                onPress={async () => {
+                  try {
+                    const users = await GameDB.getAllUsers();
+                    console.log('Users:', users);
+                    Alert.alert('ข้อมูลผู้ใช้', `พบผู้ใช้ ${users.length} คน\nดูรายละเอียดใน console log`);
+                  } catch (error) {
+                    Alert.alert('ผิดพลาด', 'ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+                  }
+                }}
+                style={[styles.button, { backgroundColor: theme.colors.primary }]}
+                leftIcon={<Ionicons name="people" size={24} color="white" />}
+              />
+            </>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -94,34 +120,38 @@ export const HomeScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  inner: {
+    flex: 1,
+    padding: 16,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginTop: 80,
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 48,
     fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 20,
+    gap: 16,
   },
   button: {
-    marginVertical: 8,
+    height: 56,
+  },
+  logoutButton: {
+    position: 'absolute',
+    right: 16,
+    top: 48,
+    zIndex: 1,
   },
 }); 

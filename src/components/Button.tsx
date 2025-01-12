@@ -1,17 +1,20 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { Theme } from '../theme';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
   style?: any;
   leftIcon?: React.ReactNode;
 }
+
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 
 export const Button: React.FC<ButtonProps> = ({
   title,
@@ -49,10 +52,19 @@ export const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const getBackgroundColor = () => {
-    if (disabled) return theme.colors.disabled;
-    if (variant === 'outline') return 'transparent';
-    return variant === 'primary' ? theme.colors.primary : theme.colors.secondary;
+  const getBackgroundColor = (variant: ButtonVariant, theme: Theme) => {
+    switch (variant) {
+      case 'primary':
+        return theme.colors.primary;
+      case 'secondary':
+        return theme.colors.card;
+      case 'outline':
+        return 'transparent';
+      case 'ghost':
+        return 'transparent';
+      default:
+        return theme.colors.primary;
+    }
   };
 
   const getTextColor = () => {
@@ -70,7 +82,7 @@ export const Button: React.FC<ButtonProps> = ({
         {
           height: getHeight(),
           paddingHorizontal: getPadding(),
-          backgroundColor: getBackgroundColor(),
+          backgroundColor: getBackgroundColor(variant, theme),
           borderColor: variant === 'outline' ? theme.colors.primary : 'transparent',
           borderWidth: variant === 'outline' ? 2 : 0,
           opacity: disabled ? 0.5 : 1,

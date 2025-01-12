@@ -15,10 +15,11 @@ import { Location, locations } from '../data/locations';
 import { RootStackParamList } from '../types/navigation';
 import { useTheme } from '@react-navigation/native';
 import { Theme } from '../theme';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { Button } from '../components/Button';
 import { GameDB } from '../utils/db';
 import * as Haptics from 'expo-haptics';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -55,13 +56,14 @@ type GameState = {
   showVoteResult?: boolean;
   votedPlayers?: number[];
   showRevealScreen?: boolean;
+  gameCode?: string;
 };
 
 export default function GameScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useTheme() as Theme;
   const user = auth.currentUser;
-  const { players, spies, location, gameTime } = route.params;
+  const { players, spies, location, gameTime, gameCode } = route.params;
   const isLocalGame = route.name === 'LocalGame';
   
   const [timeLeft, setTimeLeft] = useState(gameTime);
@@ -75,6 +77,7 @@ export default function GameScreen({ route, navigation }: Props) {
     isVoting: false,
     votes: new Array(players.length).fill(0),
     showVoteResult: false,
+    gameCode,
   });
 
   const [playerRoles] = useState(() => {
@@ -129,7 +132,7 @@ export default function GameScreen({ route, navigation }: Props) {
     }));
   };
 
-  const handleVote = (votedIndex: number) => {
+  const handleVote = async (votedIndex: number) => {
     if (votedIndex === gameState.currentPlayer) {
       Alert.alert('ไม่สามารถโหวตตัวเองได้', 'กรุณาเลือกผู้เล่นคนอื่น');
       return;
@@ -141,11 +144,20 @@ export default function GameScreen({ route, navigation }: Props) {
       const newVotedPlayers = gameState.votedPlayers?.filter(
         (player) => player !== gameState.currentPlayer
       );
-      setGameState({
-        ...gameState,
-        votes: newVotes,
-        votedPlayers: newVotedPlayers,
-      });
+      
+      if (isLocalGame) {
+        setGameState({
+          ...gameState,
+          votes: newVotes,
+          votedPlayers: newVotedPlayers,
+        });
+      } else {
+        await updateGameState({
+          votes: newVotes,
+          votedPlayers: newVotedPlayers,
+        });
+      }
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return;
     }
@@ -158,18 +170,27 @@ export default function GameScreen({ route, navigation }: Props) {
     ];
 
     const isLastPlayer = gameState.currentPlayer === players.length - 1;
-    setGameState({
-      ...gameState,
+    const newState = {
       votes: newVotes,
       votedPlayers: newVotedPlayers,
       currentPlayer: isLastPlayer ? 0 : gameState.currentPlayer + 1,
       isVoting: !isLastPlayer,
       showVoteResult: isLastPlayer,
-    });
+    };
+
+    if (isLocalGame) {
+      setGameState({
+        ...gameState,
+        ...newState,
+      });
+    } else {
+      await updateGameState(newState);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleReveal = () => {
+  const handleReveal = async () => {
     if (!gameState.votes) return;
     
     const maxVotes = Math.max(...gameState.votes);
@@ -182,14 +203,22 @@ export default function GameScreen({ route, navigation }: Props) {
         [
           {
             text: 'โหวตใหม่',
-            onPress: () => {
-              setGameState(prev => ({
-                ...prev,
+            onPress: async () => {
+              const newState = {
                 isVoting: true,
                 currentPlayer: 0,
                 votes: new Array(players.length).fill(0),
                 showVoteResult: false,
-              }));
+              };
+
+              if (isLocalGame) {
+                setGameState(prev => ({
+                  ...prev,
+                  ...newState,
+                }));
+              } else {
+                await updateGameState(newState);
+              }
             }
           }
         ]
@@ -198,11 +227,19 @@ export default function GameScreen({ route, navigation }: Props) {
     }
 
     const mostVotedIndex = gameState.votes.indexOf(maxVotes);
-    setGameState(prev => ({
-      ...prev,
+    const newState = {
       showRevealScreen: true,
       votedSpy: mostVotedIndex,
-    }));
+    };
+
+    if (isLocalGame) {
+      setGameState(prev => ({
+        ...prev,
+        ...newState,
+      }));
+    } else {
+      await updateGameState(newState);
+    }
   };
 
   const saveGameResult = useCallback(async (winner: 'spy' | 'players') => {
@@ -342,6 +379,46 @@ export default function GameScreen({ route, navigation }: Props) {
       isRevoting: true,
       votes: new Array(players.length).fill(0),
     }));
+  };
+
+  useEffect(() => {
+    if (isLocalGame || !gameCode) return;
+
+    const gameRef = doc(db, 'games', gameCode);
+    const unsubscribe = onSnapshot(gameRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        Alert.alert('เกมถูกยกเลิก', 'เกมนี้ถูกยกเลิกหรือจบไปแล้ว');
+        navigation.goBack();
+        return;
+      }
+
+      const gameData = snapshot.data();
+      setGameState(prev => ({
+        ...prev,
+        isVoting: gameData.isVoting || false,
+        votes: gameData.votes || new Array(players.length).fill(0),
+        showVoteResult: gameData.showVoteResult || false,
+        votedPlayers: gameData.votedPlayers || [],
+        showRevealScreen: gameData.showRevealScreen || false,
+        votedSpy: gameData.votedSpy,
+        winner: gameData.winner,
+        isGameOver: gameData.isGameOver || false,
+      }));
+    });
+
+    return () => unsubscribe();
+  }, [isLocalGame, gameCode, players.length]);
+
+  const updateGameState = async (newState: Partial<GameState>) => {
+    if (isLocalGame || !gameCode) return;
+
+    try {
+      const gameRef = doc(db, 'games', gameCode);
+      await updateDoc(gameRef, newState);
+    } catch (error) {
+      console.error('Error updating game state:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถอัพเดทสถานะเกมได้');
+    }
   };
 
   return (

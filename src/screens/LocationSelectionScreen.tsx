@@ -60,40 +60,31 @@ export default function LocationSelectionScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity 
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={28} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          เลือกสถานที่
-        </Text>
-        <View style={{ width: 28 }} />
+        <Text style={[styles.title, { color: theme.colors.text }]}>เลือกสถานที่</Text>
       </View>
 
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
       >
         <Text style={[styles.subtitle, { color: theme.colors.subText }]}>
           เลือกอย่างน้อย 1 สถานที่
         </Text>
 
         {Object.entries(groupedLocations).map(([category, categoryLocations]) => (
-          <View key={category} style={styles.categorySection}>
-            <View style={styles.categoryHeader}>
-              <Ionicons 
-                name={CATEGORIES[category].icon as any} 
-                size={24} 
-                color={theme.colors.primary} 
-              />
-              <Text style={[styles.categoryTitle, { color: theme.colors.text }]}>
-                {CATEGORIES[category].title}
-              </Text>
-              <Text style={[styles.categoryCount, { color: theme.colors.subText }]}>
-                ({categoryLocations.length})
+          <View key={category} style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="map" size={24} color={theme.colors.primary} />
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+                {category} ({categoryLocations.length})
               </Text>
             </View>
 
@@ -103,10 +94,10 @@ export default function LocationSelectionScreen({ navigation, route }: Props) {
                   key={location.index}
                   style={[
                     styles.locationItem,
-                    {
-                      backgroundColor: selectedLocations.has(location.index)
+                    { 
+                      backgroundColor: selectedLocations.has(location.index) 
                         ? theme.colors.primary + '20'
-                        : theme.colors.card,
+                        : theme.colors.background,
                       borderColor: selectedLocations.has(location.index)
                         ? theme.colors.primary
                         : theme.colors.border,
@@ -114,21 +105,10 @@ export default function LocationSelectionScreen({ navigation, route }: Props) {
                   ]}
                   onPress={() => toggleLocation(location.index)}
                 >
-                  <Text 
-                    style={[
-                      styles.locationName, 
-                      { color: theme.colors.text }
-                    ]}
-                  >
+                  <Text style={[styles.locationName, { color: theme.colors.text }]}>
                     {location.name}
                   </Text>
-                  <Text 
-                    style={[
-                      styles.locationRoles, 
-                      { color: theme.colors.subText }
-                    ]}
-                    numberOfLines={1}
-                  >
+                  <Text style={[styles.locationRoles, { color: theme.colors.subText }]}>
                     {location.roles.length} บทบาท
                   </Text>
                 </TouchableOpacity>
@@ -138,10 +118,14 @@ export default function LocationSelectionScreen({ navigation, route }: Props) {
         ))}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
+      <View style={[styles.footer, { 
+        paddingBottom: insets.bottom || 16,
+        backgroundColor: theme.colors.card,
+      }]}>
         <Button
-          title={`ถัดไป (${selectedLocations.size} สถานที่)`}
+          title="ถัดไป"
           onPress={handleNext}
+          style={styles.nextButton}
           leftIcon={<Ionicons name="arrow-forward" size={24} color="white" />}
         />
       </View>
@@ -154,43 +138,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
+    justifyContent: 'center',
+    marginTop: 44,
     paddingHorizontal: 16,
   },
   backButton: {
-    padding: 8,
+    position: 'absolute',
+    left: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 24,
-    textAlign: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
   },
-  categorySection: {
-    marginBottom: 24,
+  contentContainer: {
+    padding: 16,
+    gap: 16,
   },
-  categoryHeader: {
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  card: {
+    borderRadius: 16,
+    padding: 16,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     gap: 8,
   },
-  categoryTitle: {
+  cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-  },
-  categoryCount: {
-    fontSize: 16,
   },
   locationGrid: {
     flexDirection: 'row',
@@ -215,5 +206,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  nextButton: {
+    height: 56,
   },
 }); 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { Theme } from '../theme';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -19,14 +19,26 @@ export default function LoginScreen({ navigation }: any) {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) return;
-    
+    if (!email || !password) {
+      Alert.alert('กรุณากรอกข้อมูล', 'กรุณากรอกอีเมลและรหัสผ่าน');
+      return;
+    }
+
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      navigation.replace('Home');
     } catch (error: any) {
       console.error('Login error:', error);
-      alert(error.message);
+      if (error.code === 'auth/invalid-email') {
+        Alert.alert('ไม่สามารถเข้าสู่ระบบได้', 'อีเมลไม่ถูกต้อง');
+      } else if (error.code === 'auth/wrong-password') {
+        Alert.alert('ไม่สามารถเข้าสู่ระบบได้', 'รหัสผ่านไม่ถูกต้อง');
+      } else if (error.code === 'auth/user-not-found') {
+        Alert.alert('ไม่สามารถเข้าสู่ระบบได้', 'ไม่พบบัญชีผู้ใช้นี้');
+      } else {
+        Alert.alert('ไม่สามารถเข้าสู่ระบบได้', 'กรุณาลองใหม่อีกครั้ง');
+      }
     } finally {
       setLoading(false);
     }

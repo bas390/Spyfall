@@ -5,16 +5,19 @@ export type GameScreenParams = {
   spies: number[];
   location: Location;
   gameTime: number;
+  gameCode?: string;
 };
 
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Home: undefined;
+  CreateGame: undefined;
+  JoinGame: undefined;
+  WaitingRoom: { gameCode: string };
   Game: GameScreenParams;
+  LocalGameSetup: { availableLocations?: Location[] };
   LocalGame: GameScreenParams;
-  LocalGameSetup: {
-    availableLocations?: Location[];
-  };
+  Tutorial: undefined;
   LocationSelection: undefined;
 }; 
